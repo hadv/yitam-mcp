@@ -1,0 +1,39 @@
+{
+  "name": "yitam-mcp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "npm run build",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
+    "start": "node -r module-alias/register -r dotenv/config ./dist/core/server/yitam-tools.js",
+    "dev": "ts-node -r tsconfig-paths/register -r dotenv/config ./src/core/server/yitam-tools.ts",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install:clean": "npm ci && npm run build",
+    "install:dev": "npm install && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "description": "",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.8.0",
+    "@qdrant/js-client-rest": "^1.13.0",
+    "@types/node": "^22.13.17",
+    "axios": "^1.6.8",
+    "chromadb": "^2.1.0",
+    "dotenv": "^16.4.7",
+    "module-alias": "^2.2.3",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
+    "eslint": "^9.23.0",
+    "rimraf": "^5.0.5"
+  }
+}

@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+must run `nvm use --lts` to ensure that we're using the right version of node and npm
