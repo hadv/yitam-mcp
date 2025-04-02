@@ -110,27 +110,42 @@ export class DatabaseService {
     }
   }
 
-  async search(query: string, limit: number = 3, scoreThreshold: number = 0.7): Promise<FormattedResult[]> {
+  async search(
+    query: string, 
+    limit: number = 3, 
+    scoreThreshold: number = 0.7,
+    domains?: string[]
+  ): Promise<FormattedResult[]> {
     const queryEmbedding = await generateEmbedding(query);
     
     if (this.dbType === DatabaseType.QDRANT) {
-      return this.searchQdrant(queryEmbedding, limit, scoreThreshold);
+      return this.searchQdrant(queryEmbedding, limit, scoreThreshold, domains);
     } else {
-      return this.searchChroma(queryEmbedding, limit);
+      return this.searchChroma(queryEmbedding, limit, domains);
     }
   }
 
-  private async searchQdrant(queryEmbedding: number[], limit: number, scoreThreshold: number): Promise<FormattedResult[]> {
+  private async searchQdrant(
+    queryEmbedding: number[], 
+    limit: number, 
+    scoreThreshold: number,
+    domains?: string[]
+  ): Promise<FormattedResult[]> {
     if (!this.qdrantClient) {
       throw new Error('Qdrant client not initialized');
     }
 
     try {
+      const filter = domains?.length 
+        ? { must: [{ key: 'domain', match: { any: domains } }] }
+        : undefined;
+
       const searchResults = await this.qdrantClient.search(this.collectionName, {
         vector: queryEmbedding,
         limit: limit,
         score_threshold: scoreThreshold,
         with_payload: true,
+        filter
       });
       
       return searchResults.map(result => ({
@@ -147,14 +162,23 @@ export class DatabaseService {
     }
   }
 
-  private async searchChroma(queryEmbedding: number[], limit: number): Promise<FormattedResult[]> {
+  private async searchChroma(
+    queryEmbedding: number[], 
+    limit: number,
+    domains?: string[]
+  ): Promise<FormattedResult[]> {
     if (!this.chromaCollection) {
       throw new Error('Chroma collection not initialized');
     }
 
+    const where = domains?.length 
+      ? { domain: { $in: domains } }
+      : undefined;
+
     const searchResults = await this.chromaCollection.query({
       queryEmbeddings: [queryEmbedding],
       nResults: limit,
+      where,
       include: [IncludeEnum.Documents, IncludeEnum.Metadatas, IncludeEnum.Distances]
     });
     

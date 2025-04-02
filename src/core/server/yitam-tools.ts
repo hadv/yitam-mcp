@@ -38,19 +38,42 @@ class YitamTools {
     }
   }
 
-  private async performSearch(query: string, limit: number, scoreThreshold: number): Promise<FormattedResult[]> {
-    return await this.dbService.search(query, limit, scoreThreshold);
+  private async performSearch(query: string, limit: number, scoreThreshold: number, domains?: string[]): Promise<FormattedResult[]> {
+    return await this.dbService.search(query, limit, scoreThreshold, domains);
   }
 
   getTools(): YitamTool[] {
     return [
       {
-        name: 'retrieve_information',
-        description: 'Retrieve information from vector database based on semantic similarity',
+        name: 'query_domain_knowledge',
+        description: 
+          'Search and retrieve domain-specific knowledge using semantic similarity.\n\n' +
+          'The tool analyzes your input query and returns relevant information from the knowledge base.\n\n' +
+          'You can optionally specify which domains to search in, such as:\n' +
+          '- đông y\n' +
+          '- âm dương ngũ hành\n' +
+          '- dịch lý\n' +
+          '- lão kinh\n' +
+          '- y học cổ truyền (Vietnamese traditional medicine)\n' +
+          '- phong thủy\n' +
+          '- đạo phật\n' +
+          'and more...\n\n' +
+          'Pro tip: For comprehensive insights, you can search across multiple complementary domains in one query.\n' +
+          'For example:\n' +
+          '- Combine "đông y" with "y học cổ truyền" for complete Vietnamese medical perspectives\n' +
+          '- Search "phong thủy" with "âm dương ngũ hành" for holistic feng shui analysis\n' +
+          '- Query "đạo phật" with "dịch lý" for deeper philosophical understanding\n\n' +
+          'If no domains are specified, it searches across all available domains.\n' +
+          'Results are ranked by relevance score, showing the most pertinent information from each selected domain.',
         inputSchema: {
           type: "object",
           properties: {
-            query: { type: "string", description: "The search query for retrieval" },
+            query: { type: "string", description: "The search query for retrieving domain knowledge" },
+            domains: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of specific domains to search within (optional)",
+            },
             limit: { 
               type: "number", 
               default: this.config.defaultLimit, 
@@ -64,16 +87,16 @@ class YitamTools {
           },
           required: ["query"],
         },
-        handler: async ({ query, limit = this.config.defaultLimit, scoreThreshold = this.config.minScoreThreshold }: RetrievalArgs) => {
+        handler: async ({ query, domains, limit = this.config.defaultLimit, scoreThreshold = this.config.minScoreThreshold }: RetrievalArgs) => {
           try {
             this.validateSearchParams(limit, scoreThreshold);
-            const results = await this.performSearch(query, limit, scoreThreshold);
+            const results = await this.performSearch(query, limit, scoreThreshold, domains);
             return { 
               success: true,
               results
             };
           } catch (error) {
-            console.error('Error in retrieve_information:', error);
+            console.error('Error in query_domain_knowledge:', error);
             return {
               success: false,
               error: error instanceof Error ? error.message : 'Unknown error occurred'

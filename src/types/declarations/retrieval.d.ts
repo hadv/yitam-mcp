@@ -8,6 +8,7 @@ export interface RetrievalConfig {
 
 export interface RetrievalArgs {
   query: string;
+  domains?: string[];
   limit?: number;
   scoreThreshold?: number;
 }
