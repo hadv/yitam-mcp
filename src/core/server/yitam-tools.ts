@@ -51,10 +51,16 @@ class YitamTools {
           'The tool analyzes your input query and returns relevant information from the knowledge base.\n\n' +
           'You can optionally specify which domains to search in, such as:\n' +
           '- đông y\n' +
+          '- y tông tâm lĩnh\n' +
+          '- hải thượng lãn ông\n' +
+          '- lê hữu trác\n' +
+          '- y quán\n' +
+          '- y quán đường\n' +
           '- âm dương ngũ hành\n' +
           '- dịch lý\n' +
           '- lão kinh\n' +
-          '- y học cổ truyền (Vietnamese traditional medicine)\n' +
+          '- lão tử\n' +
+          '- y học cổ truyền\n' +
           '- phong thủy\n' +
           '- đạo phật\n' +
           'and more...\n\n' +
