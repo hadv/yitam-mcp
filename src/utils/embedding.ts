@@ -1,44 +1,50 @@
 /**
- * Embedding utilities for Qdrant MCP Server
+ * Embedding utilities for Gemini embedding service
  * 
- * This file contains utility functions for generating and managing embeddings.
- * Using Qdrant's built-in FastEmbed support for efficient embedding generation.
+ * This file contains utility functions for generating embeddings using Google's Gemini API.
+ * Properly configured to work with the @google/generative-ai SDK for vector embeddings.
  */
 
-import axios from 'axios';
-import { VECTOR_SIZE, QDRANT_URL, QDRANT_API_KEY } from '@configs/qdrant';
+import { GoogleGenerativeAI, TaskType } from '@google/generative-ai';
+import { GEMINI_API_KEY, GEMINI_MODEL } from '../configs/gemini';
 
 /**
- * Generate an embedding vector for the provided text
+ * Generate an embedding vector for the provided text using Gemini API
  * 
- * Uses Qdrant's built-in FastEmbed capability
+ * Uses the correct format for passing taskType to the embedContent method
+ * with proper type safety using Google's TaskType enum.
  * 
  * @param text The text to generate an embedding for
- * @returns A vector representation of the text
+ * @param taskType The task type from Google's TaskType enum (RETRIEVAL_DOCUMENT or RETRIEVAL_QUERY)
+ * @returns A vector representation of the text (numeric embedding)
  */
-export async function generateEmbedding(text: string): Promise<number[]> {
+export async function generateEmbedding(
+  text: string,
+  taskType: TaskType = TaskType.RETRIEVAL_DOCUMENT
+): Promise<number[]> {
+  if (!GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is required for Gemini embeddings');
+  }
+
   try {
-    // Using Qdrant's server-side FastEmbed integration
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (QDRANT_API_KEY) {
-      headers['api-key'] = QDRANT_API_KEY;
-    }
-
-    const response = await axios.post(
-      `${QDRANT_URL}/embeddings`,
-      {
-        text: text,
-        model: 'fastembed', // Use the default FastEmbed model
+    // Initialize Gemini API
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const embeddingModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    
+    // Create properly formatted request object with TaskType enum
+    // Note: Content object must include the 'role' property for the request to be valid
+    const result = await embeddingModel.embedContent({
+      content: {
+        parts: [{ text }],
+        role: "user"
       },
-      { headers }
-    );
-
-    return response.data.embedding;
+      taskType: taskType
+    });
+    
+    return result.embedding.values;
   } catch (error) {
-    console.error('Error generating embedding with FastEmbed:', error);
-    // Fall back to mock implementation in case of errors
-    console.warn('Falling back to mock embeddings due to API error.');
-    return Array.from({ length: VECTOR_SIZE }, () => Math.random() - 0.5);
+    console.error('Error generating embedding with Gemini API:', error);
+    throw error;
   }
 }
 

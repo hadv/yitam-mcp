@@ -7,9 +7,9 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import dotenv from 'dotenv';
-import { DatabaseService } from '@services/database/database-service';
-import { FormattedResult } from '@/types/qdrant';
-import { YitamTool, RetrievalConfig, RetrievalArgs } from '@/types/declarations/retrieval';
+import { DatabaseService } from '../../services/database/database-service';
+import { FormattedResult } from '../../types/qdrant';
+import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
 
 // Load environment variables
 dotenv.config();

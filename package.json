@@ -6,8 +6,8 @@
     "prepare": "npm run build",
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
-    "start": "node -r module-alias/register -r dotenv/config ./dist/core/server/yitam-tools.js",
-    "dev": "ts-node -r tsconfig-paths/register -r dotenv/config ./src/core/server/yitam-tools.ts",
+    "start": "node -r dotenv/config ./dist/core/server/yitam-tools.js",
+    "dev": "ts-node -r dotenv/config ./src/core/server/yitam-tools.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -19,15 +19,14 @@
   "license": "MIT",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "0.24.0",
     "@modelcontextprotocol/sdk": "^1.8.0",
     "@qdrant/js-client-rest": "^1.13.0",
     "@types/node": "^22.13.17",
     "axios": "^1.6.8",
     "chromadb": "^2.1.0",
     "dotenv": "^16.4.7",
-    "module-alias": "^2.2.3",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.2"
   },
   "devDependencies": {
