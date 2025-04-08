@@ -1,11 +1,12 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { ChromaClient, Collection, IncludeEnum, IEmbeddingFunction } from 'chromadb';
-import { generateEmbedding } from '@utils/embedding';
-import { VECTOR_SIZE, QDRANT_URL, QDRANT_API_KEY } from '@configs/qdrant';
-import { CHROMA_URL } from '@configs/chroma';
-import { COLLECTION_NAME, DatabaseType, DATABASE_TYPE } from '@configs/common';
-import { FormattedResult } from '@/types/qdrant';
+import { generateEmbedding } from '../../utils/embedding';
+import { QDRANT_URL, QDRANT_API_KEY } from '../../configs/qdrant';
+import { CHROMA_URL } from '../../configs/chroma';
+import { COLLECTION_NAME, DatabaseType, DATABASE_TYPE } from '../../configs/common';
+import { FormattedResult } from '../../types/qdrant';
 import dotenv from 'dotenv';
+import { TaskType } from '@google/generative-ai';
 
 // Load environment variables
 dotenv.config();
@@ -15,7 +16,7 @@ class CustomEmbeddingFunction implements IEmbeddingFunction {
   async generate(texts: string[]): Promise<number[][]> {
     const embeddings: number[][] = [];
     for (const text of texts) {
-      const embedding = await generateEmbedding(text);
+      const embedding = await generateEmbedding(text, TaskType.RETRIEVAL_DOCUMENT);
       embeddings.push(embedding);
     }
     return embeddings;
@@ -56,6 +57,7 @@ export class DatabaseService {
     this.qdrantClient = new QdrantClient({
       url: QDRANT_URL,
       apiKey: QDRANT_API_KEY,
+      checkCompatibility: false,
     });
 
     try {
@@ -63,19 +65,12 @@ export class DatabaseService {
       const collectionExists = collections.collections.some(c => c.name === this.collectionName);
       
       if (!collectionExists) {
-        console.log(`Creating Qdrant collection ${this.collectionName}...`);
-        await this.qdrantClient.createCollection(this.collectionName, {
-          vectors: {
-            size: VECTOR_SIZE,
-            distance: 'Cosine',
-          }
-        });
-        console.log(`Qdrant collection ${this.collectionName} created.`);
+        console.log(`Collection ${this.collectionName} does not exist. This MCP is query-only.`);
       } else {
-        console.log(`Qdrant collection ${this.collectionName} already exists.`);
+        console.log(`Using existing Qdrant collection ${this.collectionName}.`);
       }
     } catch (error) {
-      console.error('Error ensuring Qdrant collection exists:', error);
+      console.error('Error checking Qdrant collections:', error);
       throw error;
     }
   }
@@ -90,22 +85,16 @@ export class DatabaseService {
       const collectionExists = collections.some((collection: any) => collection.name === this.collectionName);
       
       if (!collectionExists) {
-        console.log(`Creating Chroma collection ${this.collectionName}...`);
-        this.chromaCollection = await this.chromaClient.createCollection({
-          name: this.collectionName,
-          metadata: { 'description': 'MCP Server collection' },
-          embeddingFunction: this.embeddingFunction
-        });
-        console.log(`Chroma collection ${this.collectionName} created.`);
+        console.log(`Collection ${this.collectionName} does not exist. This MCP is query-only.`);
       } else {
-        console.log(`Chroma collection ${this.collectionName} already exists.`);
+        console.log(`Using existing Chroma collection ${this.collectionName}.`);
         this.chromaCollection = await this.chromaClient.getCollection({
           name: this.collectionName,
           embeddingFunction: this.embeddingFunction
         });
       }
     } catch (error) {
-      console.error('Error ensuring Chroma collection exists:', error);
+      console.error('Error checking Chroma collections:', error);
       throw error;
     }
   }
@@ -116,7 +105,7 @@ export class DatabaseService {
     scoreThreshold: number = 0.7,
     domains?: string[]
   ): Promise<FormattedResult[]> {
-    const queryEmbedding = await generateEmbedding(query);
+    const queryEmbedding = await generateEmbedding(query, TaskType.RETRIEVAL_QUERY);
     
     if (this.dbType === DatabaseType.QDRANT) {
       return this.searchQdrant(queryEmbedding, limit, scoreThreshold, domains);
@@ -207,74 +196,5 @@ export class DatabaseService {
     }
     
     return formattedResults;
-  }
-
-  async storeDomainKnowledge(
-    text: string,
-    domain: string,
-    metadata: Record<string, any> = {}
-  ): Promise<string> {
-    const pointId = crypto.randomUUID();
-    const timestamp = new Date().toISOString();
-    
-    const enhancedMetadata = {
-      ...metadata,
-      domain,
-      timestamp,
-      type: 'domain_knowledge',
-    };
-
-    const embedding = await generateEmbedding(text);
-
-    if (this.dbType === DatabaseType.QDRANT) {
-      await this.storeQdrant(pointId, text, embedding, enhancedMetadata);
-    } else {
-      await this.storeChroma(pointId, text, embedding, enhancedMetadata);
-    }
-
-    return pointId;
-  }
-
-  private async storeQdrant(
-    id: string,
-    text: string,
-    embedding: number[],
-    metadata: Record<string, any>
-  ): Promise<void> {
-    if (!this.qdrantClient) {
-      throw new Error('Qdrant client not initialized');
-    }
-
-    await this.qdrantClient.upsert(this.collectionName, {
-      wait: true,
-      points: [
-        {
-          id,
-          vector: embedding,
-          payload: {
-            text,
-            ...metadata
-          }
-        }
-      ]
-    });
-  }
-
-  private async storeChroma(
-    id: string,
-    text: string,
-    embedding: number[],
-    metadata: Record<string, any>
-  ): Promise<void> {
-    if (!this.chromaCollection) {
-      throw new Error('Chroma collection not initialized');
-    }
-
-    await this.chromaCollection.add({
-      ids: [id],
-      embeddings: [embedding],
-      documents: [text],
-      metadatas: [metadata]
-    });
   }
 } 
