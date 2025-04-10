@@ -101,7 +101,7 @@ export class DatabaseService {
 
   async search(
     query: string, 
-    limit: number = 3, 
+    limit: number = 10, 
     scoreThreshold: number = 0.7,
     domains?: string[]
   ): Promise<FormattedResult[]> {
@@ -138,9 +138,9 @@ export class DatabaseService {
       });
       
       return searchResults.map(result => ({
-        text: String(result.payload?.text || ''),
+        text: String(result.payload?.content || ''),
         metadata: {
-          source: String(result.payload?.source || ''),
+          source: String(result.payload?.sourceFile || ''),
           score: result.score,
           ...result.payload
         },
