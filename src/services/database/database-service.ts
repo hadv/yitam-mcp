@@ -101,7 +101,7 @@ export class DatabaseService {
 
   async search(
     query: string, 
-    limit: number = 3, 
+    limit: number = 10, 
     scoreThreshold: number = 0.7,
     domains?: string[]
   ): Promise<FormattedResult[]> {
@@ -133,17 +133,16 @@ export class DatabaseService {
         vector: queryEmbedding,
         limit: limit,
         score_threshold: scoreThreshold,
-        with_payload: true,
+        with_payload: { include: ['content'] },
         filter
       });
       
       return searchResults.map(result => ({
-        text: String(result.payload?.text || ''),
+        text: String(result.payload?.content || ''),
         metadata: {
-          source: String(result.payload?.source || ''),
-          score: result.score,
-          ...result.payload
-        },
+          source: '',
+          score: result.score
+        }
       }));
     } catch (error) {
       console.error(`Error searching Qdrant collection ${this.collectionName}:`, error);
