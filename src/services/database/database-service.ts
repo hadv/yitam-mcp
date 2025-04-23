@@ -133,12 +133,12 @@ export class DatabaseService {
         vector: queryEmbedding,
         limit: limit,
         score_threshold: scoreThreshold,
-        with_payload: { include: ['content'] },
+        with_payload: { include: ['enhancedContent'] },
         filter
       });
       
       return searchResults.map(result => ({
-        text: String(result.payload?.content || ''),
+        text: String(result.payload?.enhancedContent || ''),
         metadata: {
           source: '',
           score: result.score
