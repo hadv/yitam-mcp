@@ -15,6 +15,9 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Copy .env after build
+COPY .env ./dist/.env
+
 # Production stage - we only need the dist files
 FROM node:20-alpine
 
