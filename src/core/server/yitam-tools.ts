@@ -46,31 +46,35 @@ class YitamTools {
     return [
       {
         name: 'query_domain_knowledge',
-        description: 
-          'Search and retrieve domain-specific knowledge using semantic similarity.\n\n' +
-          'The tool analyzes your input query and returns relevant information from the knowledge base.\n\n' +
-          'You can optionally specify which domains to search in, such as:\n' +
-          '- đông y\n' +
-          '- y tông tâm lĩnh\n' +
-          '- hải thượng lãn ông\n' +
-          '- lê hữu trác\n' +
-          '- y quán\n' +
-          '- y quán đường\n' +
-          '- âm dương ngũ hành\n' +
-          '- dịch lý\n' +
-          '- lão kinh\n' +
-          '- lão tử\n' +
-          '- y học cổ truyền\n' +
-          '- phong thủy\n' +
-          '- đạo phật\n' +
-          'and more...\n\n' +
-          'Pro tip: For comprehensive insights, you can search across multiple complementary domains in one query.\n' +
-          'For example:\n' +
-          '- Combine "đông y" with "y học cổ truyền" for complete Vietnamese medical perspectives\n' +
-          '- Search "phong thủy" with "âm dương ngũ hành" for holistic feng shui analysis\n' +
-          '- Query "đạo phật" with "dịch lý" for deeper philosophical understanding\n\n' +
-          'If no domains are specified, it searches across all available domains.\n' +
-          'Results are ranked by relevance score, showing the most pertinent information from each selected domain.',
+        description: `Search and retrieve domain-specific knowledge using semantic similarity.
+
+The tool analyzes your input query and returns relevant information from the knowledge base.
+
+You can optionally specify which domains to search in, such as:
+- nội kinh
+- đông y
+- y học cổ truyền
+- y tông tâm lĩnh
+- hải thượng lãn ông
+- lê hữu trác
+- y quán
+- y quán đường
+- âm dương ngũ hành
+- dịch lý
+- lão kinh
+- lão tử
+- phong thủy
+- đạo phật
+and more...
+
+Pro tip: For comprehensive insights, you can search across multiple complementary domains in one query.
+For example:
+- Combine "đông y" with "y học cổ truyền" for complete Vietnamese medical perspectives
+- Search "phong thủy" with "âm dương ngũ hành" for holistic feng shui analysis
+- Query "đạo phật" with "dịch lý" for deeper philosophical understanding
+
+If no domains are specified, it searches across all available domains.
+Results are ranked by relevance score, showing the most pertinent information from each selected domain.`,
         inputSchema: {
           type: "object",
           properties: {
