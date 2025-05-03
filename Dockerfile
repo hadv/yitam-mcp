@@ -48,11 +48,12 @@ RUN npm ci --only=production
 # Add environment file support
 COPY --from=build /app/.env* ./
 
-# Expose the SSE port
-EXPOSE 3000
+# Expose the port (default to 3000 but can be overridden)
+EXPOSE ${PORT:-3000}
 
 # Set default transport mode
 ENV TRANSPORT_MODE=sse
+ENV PORT=3000
 
 # Command to run the server
 CMD ["node", "-r", "dotenv/config", "./dist/core/server/yitam-tools.js"]
