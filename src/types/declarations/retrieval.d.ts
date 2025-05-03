@@ -13,6 +13,11 @@ export interface RetrievalArgs {
   scoreThreshold?: number;
 }
 
+export interface HybridRetrievalArgs extends RetrievalArgs {
+  denseWeight?: number;
+  sparseWeight?: number;
+}
+
 export interface YitamTool extends Tool {
-  handler: (args: RetrievalArgs) => Promise<unknown>;
+  handler: (args: RetrievalArgs | HybridRetrievalArgs) => Promise<unknown>;
 } 
