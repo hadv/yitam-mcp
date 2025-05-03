@@ -40,3 +40,19 @@ WORKDIR /app
 
 # Copy only the built files and package.json for runtime dependencies
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Add environment file support
+COPY --from=build /app/.env* ./
+
+# Expose the SSE port
+EXPOSE 3000
+
+# Set default transport mode
+ENV TRANSPORT_MODE=sse
+
+# Command to run the server
+CMD ["node", "-r", "dotenv/config", "./dist/core/server/yitam-tools.js"]
