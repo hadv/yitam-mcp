@@ -235,10 +235,11 @@ async function runServer() {
       });
       
       // Start HTTP server
-      app.listen(port, () => {
-        console.log(`YITAM Server running with SSE transport on port ${port}`);
-        console.log(`SSE endpoint: http://localhost:${port}/sse`);
-        console.log(`Messages endpoint: http://localhost:${port}/messages`);
+      const host = process.env.MCP_SERVER_HOST || 'localhost';
+      app.listen(port, host, () => {
+        console.log(`YITAM Server running with SSE transport on ${host}: ${port}`);
+        console.log(`SSE endpoint: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/sse`);
+        console.log(`Messages endpoint: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/messages`);
       });
     } else {
       // Default to stdio transport
