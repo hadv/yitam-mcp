@@ -9,8 +9,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import dotenv from 'dotenv';
 import { DatabaseService } from '../../services/database/database-service';
-import { FormattedResult } from '../../types/qdrant';
-import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
+import { FormattedResult, DEFAULT_HYBRID_SEARCH_WEIGHTS, HybridSearchOptions } from '../../types/qdrant';
+import { YitamTool, RetrievalConfig, RetrievalArgs, HybridRetrievalArgs } from '../../types/declarations/retrieval';
 import express from 'express';
 import cors from 'cors';
 
@@ -44,8 +44,40 @@ class YitamTools {
     }
   }
 
+  private validateHybridSearchParams(
+    limit: number, 
+    scoreThreshold: number, 
+    denseWeight?: number, 
+    sparseWeight?: number
+  ): void {
+    this.validateSearchParams(limit, scoreThreshold);
+    
+    if (denseWeight !== undefined && (denseWeight < 0 || denseWeight > 1)) {
+      throw new Error('Dense weight must be between 0 and 1');
+    }
+    
+    if (sparseWeight !== undefined && (sparseWeight < 0 || sparseWeight > 1)) {
+      throw new Error('Sparse weight must be between 0 and 1');
+    }
+    
+    // If both are provided, they should sum to 1
+    if (denseWeight !== undefined && sparseWeight !== undefined) {
+      const sum = denseWeight + sparseWeight;
+      if (sum < 0.99 || sum > 1.01) { // Allow small floating point errors
+        throw new Error('Dense weight and sparse weight should sum to 1');
+      }
+    }
+  }
+
   private async performSearch(query: string, limit: number, scoreThreshold: number, domains?: string[]): Promise<FormattedResult[]> {
     return await this.dbService.search(query, limit, scoreThreshold, domains);
+  }
+
+  private async performHybridSearch(
+    query: string, 
+    options: HybridSearchOptions
+  ): Promise<FormattedResult[]> {
+    return await this.dbService.hybridSearch(query, options);
   }
 
   getTools(): YitamTool[] {
@@ -55,6 +87,12 @@ class YitamTools {
         description: `Search and retrieve domain-specific knowledge using semantic similarity.
 
 The tool analyzes your input query and returns relevant information from the knowledge base.
+
+WHEN TO USE THIS TOOL:
+- For general concept understanding and exploring broad topics
+- When you're interested in the meaning of your query rather than specific terminology
+- For conceptual or philosophical questions where exact wording is less important
+- When you want to understand the general idea behind a concept
 
 You can optionally specify which domains to search in, such as:
 - nội kinh
@@ -119,6 +157,95 @@ Results are ranked by relevance score, showing the most pertinent information fr
             };
           }
         }
+      },
+      {
+        name: 'hybrid_search_domain_knowledge',
+        description: `Hybrid search for domain-specific knowledge combining semantic similarity and keyword matching.
+
+WHEN TO USE THIS TOOL:
+- When specific terminology or keywords in your query are important
+- For technical or specialized searches where exact terms matter
+- When looking for precise references or mentions of specific concepts
+- If the standard semantic search isn't returning the expected results
+- For more accurate results when searching for names, specialized terms, or rare concepts
+
+This advanced search tool provides more accurate and contextually relevant results by blending two search methodologies:
+1. Dense vector search: Understands the semantic meaning behind your query (what you mean)
+2. Sparse vector search: Performs keyword matching (what specific terms you use)
+
+The hybrid approach excels at capturing both semantic understanding and specific terminology importance,
+resulting in more precise and comprehensive search results.
+
+You can optionally specify custom weights for each search method:
+- denseWeight: Importance of semantic meaning (default 0.7)
+- sparseWeight: Importance of keyword matching (default 0.3)
+
+You can also filter by domains, just like in the standard search tool.
+
+The results are ranked by a combined relevance score that considers both semantic similarity and keyword matching.`,
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "The search query for retrieving domain knowledge" },
+            domains: { 
+              type: "array", 
+              items: { type: "string" },
+              description: "List of specific domains to search within (optional)",
+            },
+            limit: { 
+              type: "number", 
+              default: this.config.defaultLimit, 
+              description: `Number of results to retrieve (max ${this.config.maxResults})` 
+            },
+            scoreThreshold: { 
+              type: "number", 
+              default: this.config.minScoreThreshold, 
+              description: "Minimum similarity score threshold (0-1)" 
+            },
+            denseWeight: {
+              type: "number",
+              default: DEFAULT_HYBRID_SEARCH_WEIGHTS.denseWeight,
+              description: "Weight for semantic search component (0-1)"
+            },
+            sparseWeight: {
+              type: "number",
+              default: DEFAULT_HYBRID_SEARCH_WEIGHTS.sparseWeight,
+              description: "Weight for keyword matching component (0-1)"
+            }
+          },
+          required: ["query"],
+        },
+        handler: async ({ 
+          query, 
+          domains, 
+          limit = this.config.defaultLimit, 
+          scoreThreshold = this.config.minScoreThreshold,
+          denseWeight = DEFAULT_HYBRID_SEARCH_WEIGHTS.denseWeight,
+          sparseWeight = DEFAULT_HYBRID_SEARCH_WEIGHTS.sparseWeight
+        }: HybridRetrievalArgs) => {
+          try {
+            this.validateHybridSearchParams(limit, scoreThreshold, denseWeight, sparseWeight);
+            
+            const results = await this.performHybridSearch(query, {
+              limit,
+              scoreThreshold,
+              domains,
+              denseWeight,
+              sparseWeight
+            });
+            
+            return { 
+              success: true,
+              results
+            };
+          } catch (error) {
+            console.error('Error in hybrid_search_domain_knowledge:', error);
+            return {
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error occurred'
+            };
+          }
+        }
       }
     ];
   }
@@ -159,11 +286,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       throw new Error('Query parameter is required');
     }
 
-    const result = await tool.handler({
+    // Parse the arguments based on tool type
+    const parsedArgs: RetrievalArgs = {
       query: String(args.query),
       limit: typeof args.limit === 'number' ? args.limit : undefined,
       scoreThreshold: typeof args.scoreThreshold === 'number' ? args.scoreThreshold : undefined
-    });
+    };
+    
+    // Add domain filter if provided
+    if (Array.isArray(args.domains)) {
+      parsedArgs.domains = args.domains.map(String);
+    }
+    
+    // Add hybrid search specific parameters if present
+    if (name === 'hybrid_search_domain_knowledge') {
+      if (typeof args.denseWeight === 'number') {
+        (parsedArgs as HybridRetrievalArgs).denseWeight = args.denseWeight;
+      }
+      if (typeof args.sparseWeight === 'number') {
+        (parsedArgs as HybridRetrievalArgs).sparseWeight = args.sparseWeight;
+      }
+    }
+
+    const result = await tool.handler(parsedArgs);
     return {
       content: [{ type: "text", text: JSON.stringify(result) }]
     };

@@ -9,10 +9,12 @@ YITAM MCP Server provides a vector database-backed retrieval system using the Mo
 ## Features
 
 - Semantic search using vector embeddings
+- Hybrid search combining semantic similarity and keyword matching
 - Support for multiple vector databases (Qdrant, Chroma)
 - MCP-compliant server implementation
 - TypeScript/Node.js implementation
-- Built-in FastEmbed support
+- Google Gemini embedding model integration
+- Built-in FastEmbed support (alternative to Gemini)
 - Multiple transport options (stdio and SSE)
 
 ## Prerequisites
@@ -20,6 +22,7 @@ YITAM MCP Server provides a vector database-backed retrieval system using the Mo
 - Node.js (LTS version)
 - npm
 - Either Qdrant or Chroma vector database
+- Google Gemini API key (for embedding generation)
 
 ## Installation
 
@@ -31,6 +34,9 @@ cd yitam-mcp
 
 2. Install dependencies and build:
 ```bash
+# First ensure you're using the right Node version
+nvm use --lts
+
 # For clean/production install:
 npm run install:clean
 
@@ -52,6 +58,7 @@ Edit the `.env` file with your settings:
 - `QDRANT_URL`: Your Qdrant server URL (if using Qdrant)
 - `QDRANT_API_KEY`: Your Qdrant API key (if using Qdrant)
 - `CHROMA_URL`: Your Chroma server URL (if using Chroma)
+- `GEMINI_API_KEY`: Your Google Gemini API key for embeddings
 - `TRANSPORT_MODE`: Choose between 'stdio' (default) or 'sse'
 - `PORT`: Port number for SSE server (default: 3000)
 
@@ -109,6 +116,60 @@ Basic integration flow:
 3. Process responses from the SSE connection
 
 This enables any HTTP-capable application to use the MCP server without direct coupling to MCP libraries.
+
+## Hybrid Search
+
+The server implements hybrid search functionality that combines two search approaches:
+
+1. **Dense Vector Search**: Uses Google Gemini embedding model to understand semantic meaning.
+2. **Sparse Vector Search**: Uses keyword matching for exact terminology.
+
+### Benefits of Hybrid Search
+
+- More accurate and relevant search results
+- Combines semantic understanding with keyword precision
+- Configurable weights to prioritize meaning vs. exact terms
+- Better handling of domain-specific terminology
+
+### Preparing Your Data for Hybrid Search
+
+Before using hybrid search, you need to prepare your existing vector collection by adding sparse vectors:
+
+```bash
+# Set DRY_RUN=true to test without making changes
+DRY_RUN=true npm run prepare:hybrid
+
+# When ready, run for real
+npm run prepare:hybrid
+```
+
+This script will:
+1. Check your collection configuration
+2. Add a sparse vector field if needed
+3. Generate sparse embeddings for all documents
+4. Update documents with sparse vector data
+
+### Using Hybrid Search
+
+The hybrid search endpoint allows you to:
+
+- Search with both semantic and keyword matching
+- Adjust weights between dense and sparse search
+- Filter by domains
+- Set minimum score thresholds
+
+Example:
+
+```json
+{
+  "query": "your search query",
+  "domains": ["optional", "domain", "filters"],
+  "limit": 10,
+  "scoreThreshold": 0.7,
+  "denseWeight": 0.7,
+  "sparseWeight": 0.3
+}
+```
 
 ## License
 

@@ -10,6 +10,7 @@
     "start:sse": "TRANSPORT_MODE=sse node -r dotenv/config ./dist/core/server/yitam-tools.js",
     "dev": "ts-node -r dotenv/config ./src/core/server/yitam-tools.ts",
     "dev:sse": "TRANSPORT_MODE=sse ts-node -r dotenv/config ./src/core/server/yitam-tools.ts",
+    "prepare:hybrid": "npm run build && node -r dotenv/config ./dist/scripts/prepare-hybrid-search.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1",
