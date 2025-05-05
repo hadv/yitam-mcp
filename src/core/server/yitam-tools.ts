@@ -88,6 +88,12 @@ class YitamTools {
 
 The tool analyzes your input query and returns relevant information from the knowledge base.
 
+WHEN TO USE THIS TOOL:
+- For general concept understanding and exploring broad topics
+- When you're interested in the meaning of your query rather than specific terminology
+- For conceptual or philosophical questions where exact wording is less important
+- When you want to understand the general idea behind a concept
+
 You can optionally specify which domains to search in, such as:
 - nội kinh
 - đông y
@@ -155,6 +161,13 @@ Results are ranked by relevance score, showing the most pertinent information fr
       {
         name: 'hybrid_search_domain_knowledge',
         description: `Hybrid search for domain-specific knowledge combining semantic similarity and keyword matching.
+
+WHEN TO USE THIS TOOL:
+- When specific terminology or keywords in your query are important
+- For technical or specialized searches where exact terms matter
+- When looking for precise references or mentions of specific concepts
+- If the standard semantic search isn't returning the expected results
+- For more accurate results when searching for names, specialized terms, or rare concepts
 
 This advanced search tool provides more accurate and contextually relevant results by blending two search methodologies:
 1. Dense vector search: Understands the semantic meaning behind your query (what you mean)
