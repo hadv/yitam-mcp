@@ -40,23 +40,3 @@ WORKDIR /app
 
 # Copy only the built files and package.json for runtime dependencies
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Add environment file support
-COPY --from=build /app/.env* ./
-
-# Expose the HTTP port
-EXPOSE ${PORT:-3030}
-
-# Set transport mode to SSE by default
-ENV TRANSPORT_MODE=sse
-
-# Set host to listen on all interfaces (for Docker networking)
-ENV MCP_SERVER_HOST=0.0.0.0
-ENV PORT=3030
-
-# Command to run the server
-CMD ["node", "-r", "dotenv/config", "./dist/core/server/yitam-tools.js"]

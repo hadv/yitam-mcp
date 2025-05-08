@@ -126,7 +126,7 @@ export class DatabaseService {
 
     try {
       const filter = domains?.length 
-        ? { must: [{ key: 'domain', match: { any: domains } }] }
+        ? { must: [{ key: 'domains', match: { any: domains } }] }
         : undefined;
 
       const searchResults = await this.qdrantClient.search(this.collectionName, {
@@ -160,7 +160,7 @@ export class DatabaseService {
     }
 
     const where = domains?.length 
-      ? { domain: { $in: domains } }
+      ? { domains: { $in: domains } }
       : undefined;
 
     const searchResults = await this.chromaCollection.query({

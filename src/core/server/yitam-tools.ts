@@ -2,7 +2,6 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -11,14 +10,9 @@ import dotenv from 'dotenv';
 import { DatabaseService } from '../../services/database/database-service';
 import { FormattedResult } from '../../types/qdrant';
 import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
-import express from 'express';
-import cors from 'cors';
 
 // Load environment variables
 dotenv.config();
-
-// Import the express types directly from the modules
-import type { Request, Response } from 'express-serve-static-core';
 
 class YitamTools {
   private readonly config: RetrievalConfig;
@@ -28,9 +22,9 @@ class YitamTools {
     config?: Partial<RetrievalConfig>
   ) {
     this.config = {
-      defaultLimit: 6,
+      defaultLimit: 10,
       minScoreThreshold: 0.7,
-      maxResults: 10,
+      maxResults: 20,
       ...config
     };
   }
@@ -185,67 +179,15 @@ async function runServer() {
     // Initialize the database service
     await dbService.initialize();
     
-    // Determine which transport to use based on env variables
-    const transportMode = process.env.TRANSPORT_MODE || 'stdio';
-
-    if (transportMode === 'sse') {
-      // Setup Express for SSE transport
-      const app = express();
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    
+    console.error("YITAM Server running on stdio");
+    
+    // Optional HTTP server
+    if (process.env.HTTP_SERVER === "true") {
       const port = parseInt(process.env.PORT || '3000', 10);
-      
-      // Enable CORS for all origins (can be restricted in production)
-      app.use(cors());
-      
-      // Add basic health check endpoint
-      app.get('/health', (_: Request, res: Response) => {
-        res.status(200).send('OK');
-      });
-      
-      // Create SSE endpoint
-      let sseTransport: SSEServerTransport | null = null;
-      
-      app.get('/sse', (req: Request, res: Response) => {
-        // Validate origin for security if needed
-        const origin = req.headers.origin;
-        console.log(`SSE connection requested from: ${origin}`);
-        
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Connection', 'keep-alive');
-        
-        sseTransport = new SSEServerTransport('/messages', res);
-        server.connect(sseTransport).catch(error => {
-          console.error('Error connecting SSE transport:', error);
-        });
-        
-        // Handle client disconnect
-        req.on('close', () => {
-          console.log('SSE connection closed');
-          sseTransport = null;
-        });
-      });
-      
-      // Handle JSON-RPC messages
-      app.post('/messages', express.json(), (req: Request, res: Response) => {
-        if (sseTransport) {
-          sseTransport.handlePostMessage(req, res);
-        } else {
-          res.status(400).json({ error: 'No active SSE connection' });
-        }
-      });
-      
-      // Start HTTP server
-      const host = process.env.MCP_SERVER_HOST || 'localhost';
-      app.listen(port, host, () => {
-        console.log(`YITAM Server running with SSE transport on ${host}: ${port}`);
-        console.log(`SSE endpoint: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/sse`);
-        console.log(`Messages endpoint: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/messages`);
-      });
-    } else {
-      // Default to stdio transport
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
-      console.log("YITAM Server running with stdio transport");
+      console.log(`YITAM Server running on port ${port}`);
     }
   } catch (error) {
     console.error('Error during server initialization:', error);
