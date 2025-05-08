@@ -22,9 +22,9 @@ class YitamTools {
     config?: Partial<RetrievalConfig>
   ) {
     this.config = {
-      defaultLimit: 6,
+      defaultLimit: 10,
       minScoreThreshold: 0.7,
-      maxResults: 10,
+      maxResults: 20,
       ...config
     };
   }
