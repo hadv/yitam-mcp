@@ -155,6 +155,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     const result = await tool.handler({
       query: String(args.query),
+      domains: Array.isArray(args.domains) ? args.domains : (args.domains ? [args.domains] : undefined),
       limit: typeof args.limit === 'number' ? args.limit : undefined,
       scoreThreshold: typeof args.scoreThreshold === 'number' ? args.scoreThreshold : undefined
     });

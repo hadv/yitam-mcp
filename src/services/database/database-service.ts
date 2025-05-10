@@ -107,10 +107,14 @@ export class DatabaseService {
   ): Promise<FormattedResult[]> {
     const queryEmbedding = await generateEmbedding(query, TaskType.RETRIEVAL_QUERY);
     
+    // Normalize domains if provided
+    const normalizedDomains = domains?.filter(Boolean)
+      .map(domain => domain.trim().toLowerCase());
+    
     if (this.dbType === DatabaseType.QDRANT) {
-      return this.searchQdrant(queryEmbedding, limit, scoreThreshold, domains);
+      return this.searchQdrant(queryEmbedding, limit, scoreThreshold, normalizedDomains);
     } else {
-      return this.searchChroma(queryEmbedding, limit, domains);
+      return this.searchChroma(queryEmbedding, limit, normalizedDomains);
     }
   }
 
@@ -125,8 +129,18 @@ export class DatabaseService {
     }
 
     try {
+      // Create filter if domains are provided
       const filter = domains?.length 
-        ? { must: [{ key: 'domains', match: { any: domains } }] }
+        ? { 
+            must: [
+              { 
+                key: 'domains', 
+                match: { 
+                  any: domains  // Domains are already normalized in the search method
+                } 
+              }
+            ] 
+          }
         : undefined;
 
       const searchResults = await this.qdrantClient.search(this.collectionName, {
