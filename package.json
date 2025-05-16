@@ -7,7 +7,10 @@
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "start": "node -r dotenv/config ./dist/core/server/yitam-tools.js",
+    "start:http": "node -r dotenv/config ./dist/core/server/yitam-http-server-direct.js",
+    "start:http-direct": "node -r dotenv/config ./dist/core/server/yitam-http-server-direct.js",
     "dev": "ts-node -r dotenv/config ./src/core/server/yitam-tools.ts",
+    "dev:http": "ts-node -r dotenv/config ./src/core/server/yitam-http-server-direct.ts",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -26,6 +29,7 @@
     "axios": "^1.6.8",
     "chromadb": "^2.1.0",
     "dotenv": "^16.4.7",
+    "node-fetch": "^3.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -9,14 +8,15 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import dotenv from 'dotenv';
 import { DatabaseService } from '../../services/database/database-service';
-import { FormattedResult } from '../../types/qdrant';
 import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
 import { StreamableHttpTransport } from '../transport/http-transport';
+import { FormattedResult } from '../../types/qdrant';
 
 // Load environment variables
 dotenv.config();
 
-export class YitamTools {
+// Define YitamTools class inline to avoid circular dependencies
+class YitamTools {
   private readonly config: RetrievalConfig;
 
   constructor(
@@ -123,7 +123,7 @@ Results are ranked by relevance score, showing the most pertinent information fr
 // Helper functions for server operations
 async function listToolsHandler() {
   return {
-    tools: global.yitamTools.getTools(),
+    tools: yitamTools.getTools(),
   };
 }
 
@@ -131,7 +131,7 @@ async function callToolHandler(request: any) {
   const { name, arguments: args } = request.params;
   
   try {
-    const tool = global.yitamTools.getTools().find(t => t.name === name);
+    const tool = yitamTools.getTools().find(t => t.name === name);
     if (!tool) {
       throw { 
         code: ErrorCode.InvalidParams, 
@@ -175,31 +175,26 @@ async function callToolHandler(request: any) {
   }
 }
 
+// Variables for server
+let dbService: DatabaseService;
+let yitamTools: YitamTools;
+
 // Server startup
 async function runServer() {
   try {
     // Initialize the database service
-    const dbService = new DatabaseService();
+    dbService = new DatabaseService();
     await dbService.initialize();
     
     // Create YitamTools instance
-    global.yitamTools = new YitamTools(dbService);
+    yitamTools = new YitamTools(dbService);
     
     // Create an MCP server
     const server = new Server({
       name: "yitam-server",
       version: "1.0.0",
       capabilities: {
-        tools: {
-          // Include the actual tools data in the correct format
-          ...global.yitamTools.getTools().reduce((acc: Record<string, any>, tool) => {
-            acc[tool.name] = {
-              description: tool.description,
-              inputSchema: tool.inputSchema
-            };
-            return acc;
-          }, {})
-        },
+        tools: true,
         incremental: true,
         streamable: true,
       }
@@ -209,27 +204,33 @@ async function runServer() {
     server.setRequestHandler(ListToolsRequestSchema, listToolsHandler);
     server.setRequestHandler(CallToolRequestSchema, callToolHandler);
     
-    // Always start Stdio transport
-    const stdioTransport = new StdioServerTransport();
-    await server.connect(stdioTransport);
-    console.error("YITAM Server running on stdio");
+    // Get port and host configuration
+    const port = parseInt(process.env.PORT || '8080', 10);
+    const host = process.env.HTTP_HOST || '127.0.0.1';
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
     
-    // Start HTTP transport if enabled
-    if (process.env.HTTP_SERVER === "true") {
-      const port = parseInt(process.env.PORT || '8080', 10);
-      const host = process.env.HTTP_HOST || '127.0.0.1';
-      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-      
-      // Use our refactored HTTP transport
-      const httpTransport = new StreamableHttpTransport({
-        port,
-        host,
-        allowedOrigins,
-      });
-      
-      await httpTransport.connect(server);
-      console.log(`YITAM HTTP Server running with Streamable HTTP transport`);
-    }
+    // Use our HTTP transport
+    const httpTransport = new StreamableHttpTransport({
+      port,
+      host,
+      allowedOrigins,
+    });
+    
+    await httpTransport.connect(server);
+    console.log(`YitamMCP HTTP Server running at http://${host}:${port}/mcp`);
+    
+    // Handle termination signals
+    process.on('SIGINT', async () => {
+      console.log('Shutting down server...');
+      await httpTransport.close();
+      process.exit(0);
+    });
+    
+    process.on('SIGTERM', async () => {
+      console.log('Shutting down server...');
+      await httpTransport.close();
+      process.exit(0);
+    });
   } catch (error) {
     console.error('Error during server initialization:', error);
     process.exit(1);
@@ -240,7 +241,4 @@ async function runServer() {
 runServer().catch((error) => {
   console.error('Fatal error running server:', error);
   process.exit(1);
-});
-
-// Import global declarations
-import '../types/globals'; 
+}); 
