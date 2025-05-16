@@ -17,7 +17,7 @@ import {
 import { SessionManager, Session } from './session-manager';
 
 // Constants
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 8080;
 const DEFAULT_HOST = '127.0.0.1';
 const MCP_ENDPOINT = '/mcp';
 

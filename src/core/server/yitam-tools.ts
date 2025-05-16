@@ -16,7 +16,7 @@ import { StreamableHttpTransport } from '../transport/http-transport';
 // Load environment variables
 dotenv.config();
 
-class YitamTools {
+export class YitamTools {
   private readonly config: RetrievalConfig;
 
   constructor(
@@ -216,7 +216,7 @@ async function runServer() {
     
     // Start HTTP transport if enabled
     if (process.env.HTTP_SERVER === "true") {
-      const port = parseInt(process.env.PORT || '3000', 10);
+      const port = parseInt(process.env.PORT || '8080', 10);
       const host = process.env.HTTP_HOST || '127.0.0.1';
       const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
       
@@ -242,7 +242,5 @@ runServer().catch((error) => {
   process.exit(1);
 });
 
-// Global type definition for yitamTools
-declare global {
-  var yitamTools: YitamTools;
-} 
+// Import global declarations
+import '../types/globals'; 

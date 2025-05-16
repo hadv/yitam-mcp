@@ -241,7 +241,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`MCP test server running at http://127.0.0.1:${PORT}/mcp`);
 });

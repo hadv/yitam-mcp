@@ -13,7 +13,7 @@ const clientInfo = {
 // Simple JSON-RPC client
 const callMcp = async (method, params = {}) => {
   try {
-    const response = await fetch('http://127.0.0.1:3000/mcp', {
+    const response = await fetch('http://127.0.0.1:8080/mcp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
