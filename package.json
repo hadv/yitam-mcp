@@ -8,6 +8,7 @@
     "build": "npm run clean && tsc",
     "start": "node -r dotenv/config ./dist/core/server/yitam-tools.js",
     "start:http": "node -r dotenv/config ./dist/core/server/yitam-http-server.js",
+    "start:http-direct": "node -r dotenv/config ./dist/core/server/yitam-http-server-direct.js",
     "dev": "ts-node -r dotenv/config ./src/core/server/yitam-tools.ts",
     "dev:http": "ts-node -r dotenv/config ./src/core/server/yitam-http-server.ts",
     "lint": "eslint . --ext .ts",
