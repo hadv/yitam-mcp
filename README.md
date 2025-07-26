@@ -51,6 +51,8 @@ Edit the `.env` file with your settings:
 - `QDRANT_URL`: Your Qdrant server URL (if using Qdrant)
 - `QDRANT_API_KEY`: Your Qdrant API key (if using Qdrant)
 - `CHROMA_URL`: Your Chroma server URL (if using Chroma)
+- `GEMINI_API_KEY`: Your Google Gemini API key for embeddings
+- `GEMINI_MODEL`: Embedding model to use (default: gemini-embedding-001)
 
 ## Usage
 

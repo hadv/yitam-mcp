@@ -6,7 +6,6 @@ import { CHROMA_URL } from '../../configs/chroma';
 import { COLLECTION_NAME, DatabaseType, DATABASE_TYPE } from '../../configs/common';
 import { FormattedResult } from '../../types/qdrant';
 import dotenv from 'dotenv';
-import { TaskType } from '@google/generative-ai';
 
 // Load environment variables
 dotenv.config();
@@ -16,7 +15,7 @@ class CustomEmbeddingFunction implements IEmbeddingFunction {
   async generate(texts: string[]): Promise<number[][]> {
     const embeddings: number[][] = [];
     for (const text of texts) {
-      const embedding = await generateEmbedding(text, TaskType.RETRIEVAL_DOCUMENT);
+      const embedding = await generateEmbedding(text, 'RETRIEVAL_DOCUMENT');
       embeddings.push(embedding);
     }
     return embeddings;
@@ -105,7 +104,7 @@ export class DatabaseService {
     scoreThreshold: number = 0.7,
     domains?: string[]
   ): Promise<FormattedResult[]> {
-    const queryEmbedding = await generateEmbedding(query, TaskType.RETRIEVAL_QUERY);
+    const queryEmbedding = await generateEmbedding(query, 'RETRIEVAL_QUERY');
     
     // Normalize domains if provided
     const normalizedDomains = domains?.filter(Boolean)
