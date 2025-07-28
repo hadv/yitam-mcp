@@ -6,7 +6,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { GEMINI_API_KEY, GEMINI_MODEL } from '../configs/gemini';
+import { GEMINI_API_KEY, GEMINI_MODEL, GEMINI_EMBEDDING_DIMENSIONS } from '../configs/gemini';
 
 /**
  * Generate an embedding vector for the provided text using Gemini API
@@ -31,10 +31,13 @@ export async function generateEmbedding(
       apiKey: GEMINI_API_KEY
     });
 
-    // Use the new embedContent API format
+    // Use the new embedContent API format with optional dimension configuration
     const response = await ai.models.embedContent({
       model: GEMINI_MODEL,
-      contents: [text]
+      contents: [text],
+      config: GEMINI_EMBEDDING_DIMENSIONS ? {
+        outputDimensionality: GEMINI_EMBEDDING_DIMENSIONS
+      } : undefined
     });
 
     // Return the values from the first embedding

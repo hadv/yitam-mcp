@@ -53,6 +53,7 @@ Edit the `.env` file with your settings:
 - `CHROMA_URL`: Your Chroma server URL (if using Chroma)
 - `GEMINI_API_KEY`: Your Google Gemini API key for embeddings
 - `GEMINI_MODEL`: Embedding model to use (default: gemini-embedding-001)
+- `GEMINI_EMBEDDING_DIMENSIONS`: Optional dimension reduction (default: 3072 for gemini-embedding-001)
 
 ## Usage
 
