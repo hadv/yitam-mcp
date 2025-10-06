@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/hadv-yitam-mcp-badge.png)](https://mseep.ai/app/hadv-yitam-mcp)
+
 # YITAM MCP Server
 
 Your Intelligent Task Assistant Manager - Model Context Protocol Server
