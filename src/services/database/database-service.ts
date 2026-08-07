@@ -142,15 +142,15 @@ export class DatabaseService {
           }
         : undefined;
 
-      const searchResults = await this.qdrantClient.search(this.collectionName, {
-        vector: queryEmbedding,
+      const searchResults = await this.qdrantClient.query(this.collectionName, {
+        query: queryEmbedding,
         limit: limit,
         score_threshold: scoreThreshold,
         with_payload: { include: ['enhancedContent'] },
         filter
       });
-      
-      return searchResults.map(result => ({
+
+      return searchResults.points.map(result => ({
         text: String(result.payload?.enhancedContent || ''),
         metadata: {
           source: '',

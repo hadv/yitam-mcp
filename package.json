@@ -21,7 +21,7 @@
   "dependencies": {
     "@google/genai": "^1.11.0",
     "@modelcontextprotocol/sdk": "^1.8.0",
-    "@qdrant/js-client-rest": "^1.13.0",
+    "@qdrant/js-client-rest": "^1.19.0",
     "@types/node": "^22.13.17",
     "axios": "^1.6.8",
     "chromadb": "^2.1.0",
