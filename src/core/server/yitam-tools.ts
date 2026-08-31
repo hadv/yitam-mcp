@@ -5,16 +5,18 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  ErrorCode,
 } from "@modelcontextprotocol/sdk/types.js";
 import dotenv from 'dotenv';
 import { DatabaseService } from '../../services/database/database-service';
 import { FormattedResult } from '../../types/qdrant';
 import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
+import { StreamableHttpTransport } from '../transport/http-transport';
 
 // Load environment variables
 dotenv.config();
 
-class YitamTools {
+export class YitamTools {
   private readonly config: RetrievalConfig;
 
   constructor(
@@ -118,39 +120,30 @@ Results are ranked by relevance score, showing the most pertinent information fr
   }
 }
 
-// Service initialization
-const dbService = new DatabaseService();
-const yitamTools = new YitamTools(dbService);
+// Helper functions for server operations
+async function listToolsHandler() {
+  return {
+    tools: global.yitamTools.getTools(),
+  };
+}
 
-// Server setup
-const server = new Server(
-  {
-    name: "yitam-server",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  },
-);
-
-// Request handlers
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: yitamTools.getTools(),
-}));
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+async function callToolHandler(request: any) {
   const { name, arguments: args } = request.params;
   
   try {
-    const tool = yitamTools.getTools().find(t => t.name === name);
+    const tool = global.yitamTools.getTools().find(t => t.name === name);
     if (!tool) {
-      throw new Error(`Unknown tool: ${name}`);
+      throw { 
+        code: ErrorCode.InvalidParams, 
+        message: `Tool not found: ${name}`
+      };
     }
 
     if (!args?.query) {
-      throw new Error('Query parameter is required');
+      throw { 
+        code: ErrorCode.InvalidParams, 
+        message: 'Query parameter is required'
+      };
     }
 
     const result = await tool.handler({
@@ -159,36 +152,83 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       limit: typeof args.limit === 'number' ? args.limit : undefined,
       scoreThreshold: typeof args.scoreThreshold === 'number' ? args.scoreThreshold : undefined
     });
+    
     return {
       content: [{ type: "text", text: JSON.stringify(result) }]
     };
   } catch (error) {
     console.error(`Error during tool execution (${name}):`, error);
-    return {
-      content: [{ 
-        type: "text", 
-        text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
-      }],
-      isError: true,
-    };
+    
+    if (error instanceof Error) {
+      return {
+        content: [{ type: "text", text: `Error: ${error.message}` }],
+        isError: true,
+      };
+    } else if (typeof error === 'object' && error !== null && 'message' in error) {
+      throw error; // Rethrow structured errors with code and message
+    } else {
+      return {
+        content: [{ type: "text", text: `Error: Unknown error occurred` }],
+        isError: true,
+      };
+    }
   }
-});
+}
 
 // Server startup
 async function runServer() {
   try {
     // Initialize the database service
+    const dbService = new DatabaseService();
     await dbService.initialize();
     
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
+    // Create YitamTools instance
+    global.yitamTools = new YitamTools(dbService);
     
+    // Create an MCP server
+    const server = new Server({
+      name: "yitam-server",
+      version: "1.0.0",
+      capabilities: {
+        tools: {
+          // Include the actual tools data in the correct format
+          ...global.yitamTools.getTools().reduce((acc: Record<string, any>, tool) => {
+            acc[tool.name] = {
+              description: tool.description,
+              inputSchema: tool.inputSchema
+            };
+            return acc;
+          }, {})
+        },
+        incremental: true,
+        streamable: true,
+      }
+    });
+    
+    // Register request handlers
+    server.setRequestHandler(ListToolsRequestSchema, listToolsHandler);
+    server.setRequestHandler(CallToolRequestSchema, callToolHandler);
+    
+    // Always start Stdio transport
+    const stdioTransport = new StdioServerTransport();
+    await server.connect(stdioTransport);
     console.error("YITAM Server running on stdio");
     
-    // Optional HTTP server
+    // Start HTTP transport if enabled
     if (process.env.HTTP_SERVER === "true") {
-      const port = parseInt(process.env.PORT || '3000', 10);
-      console.log(`YITAM Server running on port ${port}`);
+      const port = parseInt(process.env.PORT || '8080', 10);
+      const host = process.env.HTTP_HOST || '127.0.0.1';
+      const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+      
+      // Use our refactored HTTP transport
+      const httpTransport = new StreamableHttpTransport({
+        port,
+        host,
+        allowedOrigins,
+      });
+      
+      await httpTransport.connect(server);
+      console.log(`YITAM HTTP Server running with Streamable HTTP transport`);
     }
   } catch (error) {
     console.error('Error during server initialization:', error);
@@ -196,7 +236,11 @@ async function runServer() {
   }
 }
 
+// Run the server
 runServer().catch((error) => {
   console.error('Fatal error running server:', error);
   process.exit(1);
-}); 
+});
+
+// Import global declarations
+import '../types/globals'; 
