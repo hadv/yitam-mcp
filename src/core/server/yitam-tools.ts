@@ -61,8 +61,8 @@ You can optionally specify which domains to search in, such as:
 - y quán đường
 - ni hải hạ
 - châm cứu
-- kinh phương
-- bản thảo
+- bài thuốc cổ phương
+- dược liệu
 - âm dương ngũ hành
 - dịch lý
 - lão kinh
