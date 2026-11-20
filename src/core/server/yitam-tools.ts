@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import { DatabaseService } from '../../services/database/database-service';
 import { FormattedResult } from '../../types/qdrant';
 import { YitamTool, RetrievalConfig, RetrievalArgs } from '../../types/declarations/retrieval';
+import { describeForClient, redactSecrets } from '../../utils/errors';
 
 // Load environment variables
 dotenv.config();
@@ -110,10 +111,14 @@ Results are ranked by relevance score, showing the most pertinent information fr
               results
             };
           } catch (error) {
-            console.error('Error in query_domain_knowledge:', error);
+            const { error: message, errorKind } = describeForClient(error);
+            console.error(`Error in query_domain_knowledge [${errorKind}]: ${message}`);
+            // Not "no results": the knowledge base could not be searched at all.
             return {
               success: false,
-              error: error instanceof Error ? error.message : 'Unknown error occurred'
+              errorKind,
+              error: message,
+              note: 'The knowledge base search failed; this is NOT an empty result. Tell the user the reference library is temporarily unavailable instead of answering as if nothing relevant exists.'
             };
           }
         }
@@ -163,15 +168,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       limit: typeof args.limit === 'number' ? args.limit : undefined,
       scoreThreshold: typeof args.scoreThreshold === 'number' ? args.scoreThreshold : undefined
     });
+    const failed = (result as { success?: boolean } | undefined)?.success === false;
     return {
-      content: [{ type: "text", text: JSON.stringify(result) }]
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      ...(failed ? { isError: true } : {})
     };
   } catch (error) {
-    console.error(`Error during tool execution (${name}):`, error);
+    const message = redactSecrets(error instanceof Error ? error.message : 'Unknown error occurred');
+    console.error(`Error during tool execution (${name}): ${message}`);
     return {
       content: [{ 
         type: "text", 
-        text: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`
+        text: `Error: ${message}`
       }],
       isError: true,
     };
