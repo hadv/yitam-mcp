@@ -59,6 +59,10 @@ You can optionally specify which domains to search in, such as:
 - lê hữu trác
 - y quán
 - y quán đường
+- ni hải hạ
+- châm cứu
+- bài thuốc cổ phương
+- dược liệu
 - âm dương ngũ hành
 - dịch lý
 - lão kinh
